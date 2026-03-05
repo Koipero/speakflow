@@ -1,0 +1,17 @@
+{
+    "name": "SpeakFlow - 英文音読トレーニング",
+    "short_name": "SpeakFlow",
+    "description": "英文音読トレーニングアプリ。ElevenLabs APIによる高品質音声で発音力を向上。",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a0e1a",
+    "theme_color": "#0a0e1a",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
