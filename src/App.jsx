@@ -1,19 +1,92 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
-// --- ElevenLabs Config ---
-const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1';
+// --- Gemini API Config ---
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+// --- IndexedDB Cache Setup ---
+const DB_NAME = 'SpeakFlowCacheDB_v2';
+const STORE_NAME = 'AudioCache';
+
+const initDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (event) => {
+      event.target.result.createObjectStore(STORE_NAME);
+    };
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+};
+
+const getCachedAudio = async (key) => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(key);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('IndexedDB get error:', err);
+    return null;
+  }
+};
+
+const setCachedAudio = async (key, blob) => {
+  try {
+    const db = await initDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.put(blob, key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.error('IndexedDB set error:', err);
+  }
+};
+
+const addWavHeader = (pcmData, sampleRate = 24000) => {
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+  const blockAlign = (numChannels * bitsPerSample) / 8;
+  const buffer = new ArrayBuffer(44 + pcmData.byteLength);
+  const view = new DataView(buffer);
+  
+  const writeString = (view, offset, string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+  
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + pcmData.byteLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, pcmData.byteLength, true);
+  new Uint8Array(buffer, 44).set(pcmData);
+  return buffer;
+};
 
 const DEFAULT_VOICES = [
-  { voice_id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George (Male, US)' },
-  { voice_id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Female, US)' },
-  { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah (Female, US)' },
-  { voice_id: 'ErXwobaYiN019PkySvjV', name: 'Antoni (Male, US)' },
-  { voice_id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Emily (Female, US)' },
-  { voice_id: 'TxGEqnHWrfWFTfGW9XjX', name: 'Josh (Male, US)' },
-  { voice_id: 'VR6AewLTigWG4xSOukaG', name: 'Arnold (Male, US)' },
-  { voice_id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Male, US)' },
-  { voice_id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam (Male, US)' },
+  { voice_id: 'Puck', name: 'Puck (Male)' },
+  { voice_id: 'Charon', name: 'Charon (Male)' },
+  { voice_id: 'Kore', name: 'Kore (Female)' },
+  { voice_id: 'Fenrir', name: 'Fenrir (Male)' },
+  { voice_id: 'Aoede', name: 'Aoede (Female)' },
 ];
 
 // --- Sample Texts (TOEIC Part 4 level, 120-150 words) ---
@@ -88,7 +161,7 @@ const PRACTICE_MODES = {
 
 function App() {
   // API Key state
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('elevenlabs_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [showApiSetup, setShowApiSetup] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
@@ -102,9 +175,10 @@ function App() {
   const [speed, setSpeed] = useState(1.0);
   const [voices, setVoices] = useState(DEFAULT_VOICES);
   const [selectedVoiceId, setSelectedVoiceId] = useState(DEFAULT_VOICES[0].voice_id);
-  const [modelId, setModelId] = useState('eleven_multilingual_v2');
+  const [modelId, setModelId] = useState('gemini-2.5-flash-preview-tts');
   const audioRef = useRef(null);
   const audioBlobUrlRef = useRef(null);
+  const audioCacheRef = useRef({});
 
   // Practice state
   const [activeMode, setActiveMode] = useState('overlapping');
@@ -131,38 +205,7 @@ function App() {
     }
   }, []);
 
-  // Fetch available voices when API key is set
-  useEffect(() => {
-    if (apiKey) {
-      fetchVoices();
-    }
-  }, [apiKey]);
-
-  const fetchVoices = async () => {
-    try {
-      const response = await fetch(`${ELEVENLABS_API_URL}/voices`, {
-        headers: {
-          'xi-api-key': apiKey
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const voiceList = data.voices.map(v => ({
-          voice_id: v.voice_id,
-          name: `${v.name}${v.labels?.accent ? ` (${v.labels.accent})` : ''}`
-        }));
-        if (voiceList.length > 0) {
-          setVoices(voiceList);
-          // Keep selected voice if it exists, otherwise pick first
-          if (!voiceList.find(v => v.voice_id === selectedVoiceId)) {
-            setSelectedVoiceId(voiceList[0].voice_id);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch voices:', err);
-    }
-  };
+  // Voices are prebuilt for Gemini, so we don't need to fetch them from an endpoint.
 
   // Parse sentences when text changes
   useEffect(() => {
@@ -188,13 +231,13 @@ function App() {
   // Cleanup audio blob URL
   useEffect(() => {
     return () => {
-      if (audioBlobUrlRef.current) {
-        URL.revokeObjectURL(audioBlobUrlRef.current);
-      }
+      Object.values(audioCacheRef.current).forEach(url => {
+        URL.revokeObjectURL(url);
+      });
     };
   }, []);
 
-  // --- ElevenLabs TTS ---
+  // --- Gemini TTS ---
   const speak = useCallback(async (textToSpeak) => {
     if (!apiKey) {
       setShowApiSetup(true);
@@ -208,44 +251,105 @@ function App() {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-    if (audioBlobUrlRef.current) {
-      URL.revokeObjectURL(audioBlobUrlRef.current);
-      audioBlobUrlRef.current = null;
-    }
 
     setIsLoading(true);
     setIsPlaying(false);
     setErrorMsg('');
 
     try {
-      const response = await fetch(
-        `${ELEVENLABS_API_URL}/text-to-speech/${selectedVoiceId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey
-          },
-          body: JSON.stringify({
-            text: textToSpeak,
-            model_id: modelId,
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-              style: 0.0,
-              use_speaker_boost: true
-            }
-          })
-        }
-      );
+      const cacheKey = `${modelId}_${selectedVoiceId}_${textToSpeak}`;
+      let audioUrl = audioCacheRef.current[cacheKey];
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.detail?.message || `API Error: ${response.status}`);
+      if (!audioUrl) {
+        // 1. Check IndexedDB cache explicitly to reuse previously created audio
+        const cachedBlob = await getCachedAudio(cacheKey);
+        
+        if (cachedBlob) {
+          audioUrl = URL.createObjectURL(cachedBlob);
+          audioCacheRef.current[cacheKey] = audioUrl;
+          console.log("Loaded audio from IndexedDB cache:", cacheKey.substring(0, 50) + "...");
+        } else {
+          // 2. Not in cache, fetch from API
+          const response = await fetch(
+            `${GEMINI_API_URL}/${modelId}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      {
+                        text: textToSpeak
+                      }
+                    ]
+                  }
+                ],
+                generationConfig: {
+                  responseModalities: ["AUDIO"],
+                  speechConfig: {
+                    voiceConfig: {
+                      prebuiltVoiceConfig: {
+                        voiceName: selectedVoiceId
+                      }
+                    }
+                  }
+                }
+              })
+            }
+          );
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.error?.message || `API Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("⚡️ Gemini API Response Data:", data);
+          const audioPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+
+          if (!audioPart || !audioPart.inlineData) {
+            const textPart = data.candidates?.[0]?.content?.parts?.find(p => p.text);
+            console.error("No audio part found. Returned text:", textPart?.text);
+            throw new Error(`音声データの生成に失敗しました（レスポンスに音声が含まれていません: ${textPart ? 'テキストが返却されました' : '不明なレスポンス形式'}）。開発者ツールのConsoleを確認してください。`);
+          }
+
+          const base64Audio = audioPart.inlineData.data;
+
+          // Convert base64 to Blob
+          const byteCharacters = atob(base64Audio);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          
+          let audioData = byteArray;
+          // Check if data is already a WAV file (starts with 'RIFF')
+          const isWav = byteArray.length > 4 && 
+                        byteArray[0] === 82 && 
+                        byteArray[1] === 73 && 
+                        byteArray[2] === 70 && 
+                        byteArray[3] === 70;
+                        
+          if (!isWav) {
+            // Gemini API returns raw 16-bit 24kHz PCM. We must add a WAV header for browsers to play it.
+            audioData = addWavHeader(byteArray, 24000);
+          }
+
+          const audioBlob = new Blob([audioData], { type: 'audio/wav' });
+
+          // 3. Save to IndexedDB for future use (survives page reloads)
+          await setCachedAudio(cacheKey, audioBlob);
+
+          audioUrl = URL.createObjectURL(audioBlob);
+          audioCacheRef.current[cacheKey] = audioUrl;
+          console.log("Saved new audio to IndexedDB cache:", cacheKey.substring(0, 50) + "...");
+        }
       }
 
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
       audioBlobUrlRef.current = audioUrl;
 
       const audio = new Audio(audioUrl);
@@ -270,13 +374,13 @@ function App() {
       setIsLoading(false);
       setIsPlaying(false);
 
-      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+      if (err.message.includes('API_KEY_INVALID') || err.message.includes('400')) {
         setErrorMsg('APIキーが無効です。正しいキーを設定してください。');
         setShowApiSetup(true);
       } else {
         setErrorMsg(`エラー: ${err.message}`);
       }
-      console.error('ElevenLabs TTS Error:', err);
+      console.error('Gemini TTS Error:', err);
     }
   }, [apiKey, selectedVoiceId, modelId, speed]);
 
@@ -331,7 +435,7 @@ function App() {
 
   const handleSaveApiKey = () => {
     if (apiKeyInput.trim()) {
-      localStorage.setItem('elevenlabs_api_key', apiKeyInput.trim());
+      localStorage.setItem('gemini_api_key', apiKeyInput.trim());
       setApiKey(apiKeyInput.trim());
       setShowApiSetup(false);
       setErrorMsg('');
@@ -339,7 +443,7 @@ function App() {
   };
 
   const handleClearApiKey = () => {
-    localStorage.removeItem('elevenlabs_api_key');
+    localStorage.removeItem('gemini_api_key');
     setApiKey('');
     setApiKeyInput('');
     setVoices(DEFAULT_VOICES);
@@ -375,7 +479,7 @@ function App() {
           {apiKey ? (
             <button className="api-badge api-badge-connected" onClick={() => setShowApiSetup(true)}>
               <span className="api-badge-dot connected" />
-              ElevenLabs 接続済み
+              Gemini API 接続済み
             </button>
           ) : (
             <button className="api-badge api-badge-disconnected" onClick={() => setShowApiSetup(true)}>
@@ -386,8 +490,10 @@ function App() {
         </div>
       </header>
 
-      {/* Profile & Guide Summary */}
-      <section className="guide-summary-section">
+      <div className="app-main-layout">
+        <aside className="app-sidebar">
+          {/* Profile & Guide Summary */}
+          <section className="guide-summary-section">
         <div className="guide-summary-card">
           <div className="guide-summary-profile">
             <div className="guide-profile-header">
@@ -658,33 +764,35 @@ function App() {
           </div>
         </section>
       )}
+        </aside>
 
+        <main className="app-main-content">
       {/* API Key Setup Modal */}
       {showApiSetup && (
         <div className="modal-overlay" onClick={() => apiKey && setShowApiSetup(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">🔑 ElevenLabs API 設定</h2>
+              <h2 className="modal-title">🔑 Gemini API 設定</h2>
               {apiKey && (
                 <button className="modal-close" onClick={() => setShowApiSetup(false)}>✕</button>
               )}
             </div>
             <p className="modal-description">
-              ElevenLabs のAPIキーを入力してください。自然で高品質な英語音声を生成します。
+              Gemini APIのキーを入力してください。自然で高品質な英語音声を生成します。
             </p>
             <a
-              href="https://elevenlabs.io/app/settings/api-keys"
+              href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
               className="modal-link"
             >
-              🔗 ElevenLabs でAPIキーを取得する →
+              🔗 Google AI Studio でAPIキーを取得する →
             </a>
             <div className="modal-input-group">
               <input
                 type="password"
                 className="modal-input"
-                placeholder="sk_xxxxxxxxxxxxxxxx..."
+                placeholder="AIzaSy..."
                 value={apiKeyInput}
                 onChange={(e) => setApiKeyInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveApiKey()}
@@ -779,7 +887,7 @@ function App() {
       <section className="playback-section">
         <div className="section-label">
           <span className="icon">🔈</span>
-          ElevenLabs 音声再生
+          Gemini 音声再生
         </div>
         <div className="playback-controls">
           <button
@@ -817,7 +925,7 @@ function App() {
         {/* Loading indicator */}
         {isLoading && (
           <div className="loading-text">
-            🎙️ ElevenLabs で高品質音声を生成しています...
+            🎙️ Gemini で高品質音声を生成しています...
           </div>
         )}
 
@@ -860,9 +968,9 @@ function App() {
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
             >
-              <option value="eleven_multilingual_v2">Multilingual v2 (高品質)</option>
-              <option value="eleven_flash_v2_5">Flash v2.5 (低遅延)</option>
-              <option value="eleven_turbo_v2_5">Turbo v2.5 (バランス)</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
             </select>
           </div>
         </div>
@@ -920,6 +1028,14 @@ function App() {
                     {sentences[currentSentenceIndex] || ''}
                   </div>
                   <div className="sentence-nav">
+                    <button
+                      className="sentence-nav-btn"
+                      onClick={() => setCurrentSentenceIndex(0)}
+                      disabled={currentSentenceIndex === 0}
+                      title="1文目に戻る"
+                    >
+                      ⏪ 1文目
+                    </button>
                     <button
                       className="sentence-nav-btn"
                       onClick={() => setCurrentSentenceIndex(prev => Math.max(0, prev - 1))}
@@ -1035,6 +1151,8 @@ function App() {
           ))}
         </div>
       </section>
+        </main>
+      </div>
     </div>
   )
 }
