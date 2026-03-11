@@ -244,7 +244,20 @@ function App() {
         throw new Error(errData?.detail?.message || `API Error: ${response.status}`);
       }
 
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('audio')) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(
+          errData?.detail?.message ||
+          errData?.message ||
+          '音声データを取得できませんでした。モデル設定またはAPI利用状況を確認してください。'
+        );
+      }
+
       const audioBlob = await response.blob();
+      if (!audioBlob.size) {
+        throw new Error('音声データが空です。テキスト内容やAPI利用状況を確認してください。');
+      }
       const audioUrl = URL.createObjectURL(audioBlob);
       audioBlobUrlRef.current = audioUrl;
 
@@ -262,7 +275,7 @@ function App() {
       audio.onerror = () => {
         setIsPlaying(false);
         setIsLoading(false);
-        setErrorMsg('音声の再生に失敗しました');
+        setErrorMsg('音声の再生に失敗しました。ブラウザ形式対応またはAPIレスポンスを確認してください。');
       };
 
       await audio.play();
