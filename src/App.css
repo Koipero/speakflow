@@ -1820,6 +1820,23 @@
   margin-bottom: 0.5rem;
 }
 
+.sample-selected-info.practiced {
+  border-left: 3px solid var(--accent-green, #22c55e);
+}
+
+.sample-selected-info.not-practiced {
+  border-left: 3px solid var(--text-muted, #6b7280);
+}
+
+.practice-status.not-practiced {
+  font-size: 0.7rem;
+  color: var(--text-muted, #6b7280);
+  background: rgba(107, 114, 128, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 .sample-selected-header {
   display: flex;
   align-items: center;

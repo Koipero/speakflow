@@ -1191,29 +1191,34 @@ function App() {
               {filteredTexts.map(sample => {
                 const level = getMasteryLevel(sample.id);
                 const stars = level > 0 ? ' ' + getMasteryStars(level) : '';
+                const practiced = level > 0;
                 return (
                   <option key={sample.id} value={sample.id}>
-                    {sample.title} ({sample.wordCount}w){stars}{level === 5 ? ' \u{1F3C5}' : ''}
+                    {practiced ? '\u2705 ' : '\u2B1C '}{sample.title} ({sample.wordCount}w){stars}{level === 5 ? ' \u{1F3C5}' : ''}
                   </option>
                 );
               })}
             </select>
           </div>
-          <span className="category-count">{filteredTexts.length} {'\u30C6\u30AD\u30B9\u30C8'}</span>
+          <span className="category-count">
+            {filteredTexts.filter(s => getMasteryLevel(s.id) > 0).length}/{filteredTexts.length} {'\u5B9F\u65BD\u6E08'}
+          </span>
         </div>
         {selectedTextId && (() => {
           const sample = SAMPLE_TEXTS.find(s => s.id === selectedTextId);
           if (!sample) return null;
           const level = getMasteryLevel(sample.id);
           return (
-            <div className="sample-selected-info">
+            <div className={`sample-selected-info ${level > 0 ? 'practiced' : 'not-practiced'}`}>
               <div className="sample-selected-header">
                 <span className="sample-selected-title">{sample.title}</span>
-                {level > 0 && (
+                {level > 0 ? (
                   <span className={`mastery-stars level-${level}`}>
                     {getMasteryStars(level)}
                     {level === 5 && <span className="master-badge-inline">{'\u{1F3C5}'}</span>}
                   </span>
+                ) : (
+                  <span className="practice-status not-practiced">{'\u672A\u5B9F\u65BD'}</span>
                 )}
               </div>
               <div className="sample-selected-meta">{sample.category} {'\u00B7'} {sample.wordCount} words</div>
