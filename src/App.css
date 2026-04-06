@@ -1770,6 +1770,102 @@
   margin-bottom: 1rem;
 }
 
+/* ===== Sample Text Dropdown Layout ===== */
+.sample-select-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.sample-select-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.sample-text-select {
+  padding: 0.6rem 1rem;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  flex: 1;
+  min-width: 0;
+}
+
+.sample-text-select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: var(--shadow-glow-blue);
+}
+
+.sample-text-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.sample-selected-info {
+  padding: 0.75rem 1rem;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+}
+
+.sample-selected-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sample-selected-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.sample-selected-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* ===== Guide Feature List ===== */
+.guide-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.guide-feature-item {
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm, 6px);
+  border-left: 3px solid var(--accent-blue);
+}
+
+.guide-feature-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.guide-feature-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 .category-select {
   padding: 0.6rem 1rem;
   background: var(--bg-glass);
@@ -2248,6 +2344,21 @@
 
   .category-filter {
     flex-wrap: wrap;
+  }
+
+  .sample-select-row {
+    flex-wrap: wrap;
+  }
+
+  .sample-select-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .sample-text-select,
+  .sample-select-group .category-select {
+    width: 100%;
+    min-width: unset;
   }
 
   .practice-btn-speed-challenge {

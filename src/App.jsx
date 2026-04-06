@@ -929,6 +929,57 @@ function App() {
           <div className="guide-card">
             <button
               className="guide-accordion-btn"
+              onClick={() => setExpandedGuideSection(expandedGuideSection === 'features' ? null : 'features')}
+            >
+              <span>{'\u{1F195} \u65B0\u6A5F\u80FD\u306E\u4F7F\u3044\u65B9'}</span>
+              <span className="guide-accordion-icon">{expandedGuideSection === 'features' ? '\u25B2' : '\u25BC'}</span>
+            </button>
+            {expandedGuideSection === 'features' && (
+              <div className="guide-accordion-content">
+                <div className="guide-feature-list">
+                  <div className="guide-feature-item">
+                    <div className="guide-feature-title">{'\u{1F4DA} \u30B5\u30F3\u30D7\u30EB\u30C6\u30AD\u30B9\u30C8\u306E\u9078\u629E'}</div>
+                    <div className="guide-feature-desc">
+                      {'\u30AB\u30C6\u30B4\u30EA\u30D7\u30EB\u30C0\u30A6\u30F3\u3067\u30B8\u30E3\u30F3\u30EB\u3092\u7D5E\u308A\u8FBC\u307F\u3001\u30C6\u30AD\u30B9\u30C8\u30D7\u30EB\u30C0\u30A6\u30F3\u3067\u7DF4\u7FD2\u3057\u305F\u3044\u4F8B\u6587\u3092\u9078\u629E\u3057\u307E\u3059\u3002Business\u3001Travel\u3001Technology\u306A\u306815\u7A2E\u985E\u304B\u3089\u9078\u3079\u307E\u3059\u3002'}
+                    </div>
+                  </div>
+                  <div className="guide-feature-item">
+                    <div className="guide-feature-title">{'\u{1F4C5} \u7DF4\u7FD2\u30AB\u30EC\u30F3\u30C0\u30FC'}</div>
+                    <div className="guide-feature-desc">
+                      {'\u300C\u2705 1\u56DE\u5B8C\u4E86\u300D\u3092\u62BC\u3059\u305F\u3073\u306B\u81EA\u52D5\u8A18\u9332\u3055\u308C\u307E\u3059\u3002\u30AB\u30EC\u30F3\u30C0\u30FC\u3067\u7DF4\u7FD2\u3057\u305F\u65E5\u304C\u8272\u4ED8\u304D\u3067\u8868\u793A\u3055\u308C\u3001\u65E5\u4ED8\u3092\u30AF\u30EA\u30C3\u30AF\u3059\u308B\u3068\u305D\u306E\u65E5\u306E\u7DF4\u7FD2\u6642\u9593\u30FB\u30E2\u30FC\u30C9\u5225\u56DE\u6570\u304C\u78BA\u8A8D\u3067\u304D\u307E\u3059\u3002'}
+                    </div>
+                  </div>
+                  <div className="guide-feature-item">
+                    <div className="guide-feature-title">{'\u{1F4C8} \u6210\u9577\u30B0\u30E9\u30D5'}</div>
+                    <div className="guide-feature-desc">
+                      {'\u904E\u53BB4\u9031\u9593\u306E\u7DF4\u7FD2\u91CF\u3092\u68D2\u30B0\u30E9\u30D5\u3067\u8868\u793A\u3002\u524D\u9031\u3068\u306E\u6BD4\u8F03\u30B3\u30E1\u30F3\u30C8\u304C\u81EA\u52D5\u8868\u793A\u3055\u308C\u308B\u306E\u3067\u3001\u7DF4\u7FD2\u306E\u7D99\u7D9A\u30E2\u30C1\u30D9\u30FC\u30B7\u30E7\u30F3\u306B\u306A\u308A\u307E\u3059\u3002'}
+                    </div>
+                  </div>
+                  <div className="guide-feature-item">
+                    <div className="guide-feature-title">{'\u{1F3C6} \u901F\u5EA6\u30C1\u30E3\u30EC\u30F3\u30B8'}</div>
+                    <div className="guide-feature-desc">
+                      {'\u7DF4\u7FD2\u4E2D\u306B\u300C\u{1F3C6} \u901F\u5EA6\u30C1\u30E3\u30EC\u30F3\u30B8\u300D\u30DC\u30BF\u30F3\u3092\u62BC\u3059\u3068\u3001\u73FE\u5728\u306E\u518D\u751F\u901F\u5EA6\u304C\u8A18\u9332\u3055\u308C\u307E\u3059\u3002\u524D\u56DE\u3088\u308A\u9AD8\u3044\u901F\u5EA6\u3067\u7DF4\u7FD2\u3067\u304D\u305F\u3089\u65B0\u8A18\u9332\uFF010.8x \u2192 1.0x \u2192 1.2x \u3068\u30B9\u30C6\u30C3\u30D7\u30A2\u30C3\u30D7\u3092\u76EE\u6307\u3057\u307E\u3057\u3087\u3046\u3002'}
+                    </div>
+                  </div>
+                  <div className="guide-feature-item">
+                    <div className="guide-feature-title">{'\u2B50 \u30DE\u30B9\u30BF\u30EA\u30FC\u30EC\u30D9\u30EB'}</div>
+                    <div className="guide-feature-desc">
+                      {'\u5404\u30C6\u30AD\u30B9\u30C8\u306B\u2605\uFF11\u301C\uFF15\u306E\u30EC\u30D9\u30EB\u304C\u4ED8\u304D\u307E\u3059\u3002'}<br />
+                      {'\u2605\uFF11: \u3044\u305A\u308C\u304B\u306E\u30E2\u30FC\u30C9\u30671\u56DE\u4EE5\u4E0A\u7DF4\u7FD2'}<br />
+                      {'\u2605\uFF12: 2\u30E2\u30FC\u30C9\u4EE5\u4E0A\u3067\u7DF4\u7FD2'}<br />
+                      {'\u2605\uFF13: \u5168\u30E2\u30FC\u30C9\u3067\u7DF4\u7FD2 & \u5408\u8A0810\u56DE\u4EE5\u4E0A'}<br />
+                      {'\u2605\uFF14: \u5168\u30E2\u30FC\u30C9\u76EE\u6A19\u9054\u6210 & \u901F\u5EA61.0x\u4EE5\u4E0A'}<br />
+                      {'\u2605\uFF15: \u5168\u30E2\u30FC\u30C9\u76EE\u6A19\u9054\u6210 & \u901F\u5EA61.2x\u4EE5\u4E0A \u{1F3C5}\u30DE\u30B9\u30BF\u30FC\uFF01'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="guide-card">
+            <button
+              className="guide-accordion-btn"
               onClick={() => setExpandedGuideSection(expandedGuideSection === 'speed' ? null : 'speed')}
             >
               <span>{'\u{1F680} \u30B9\u30D4\u30FC\u30C9\u306E\u4E0A\u3052\u65B9\u30AC\u30A4\u30C9'}</span>
@@ -1108,54 +1159,67 @@ function App() {
         </div>
       )}
 
-      {/* Sample Texts with Category Filter */}
+      {/* Sample Texts - Compact Dropdown */}
       <section className="sample-texts-section">
         <div className="section-label">
           <span className="icon">{'\u{1F4DA}'}</span>
           {'\u30B5\u30F3\u30D7\u30EB\u30C6\u30AD\u30B9\u30C8\uFF08TOEIC Part 4 \u30EC\u30D9\u30EB\uFF09'}
         </div>
-        <div className="category-filter">
-          <select
-            className="category-select"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-          >
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat}>
-                {cat === 'All' ? '\u3059\u3079\u3066' : cat}
-              </option>
-            ))}
-          </select>
+        <div className="sample-select-row">
+          <div className="sample-select-group">
+            <select
+              className="category-select"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>
+                  {cat === 'All' ? '\u3059\u3079\u3066' : cat}
+                </option>
+              ))}
+            </select>
+            <select
+              className="sample-text-select"
+              value={selectedTextId || ''}
+              onChange={(e) => {
+                const id = parseInt(e.target.value, 10);
+                const sample = SAMPLE_TEXTS.find(s => s.id === id);
+                if (sample) handleSampleSelect(sample);
+              }}
+            >
+              <option value="" disabled>{'\u30C6\u30AD\u30B9\u30C8\u3092\u9078\u629E...'}</option>
+              {filteredTexts.map(sample => {
+                const level = getMasteryLevel(sample.id);
+                const stars = level > 0 ? ' ' + getMasteryStars(level) : '';
+                return (
+                  <option key={sample.id} value={sample.id}>
+                    {sample.title} ({sample.wordCount}w){stars}{level === 5 ? ' \u{1F3C5}' : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
           <span className="category-count">{filteredTexts.length} {'\u30C6\u30AD\u30B9\u30C8'}</span>
         </div>
-        <div className="sample-texts-grid">
-          {filteredTexts.map(sample => {
-            const level = getMasteryLevel(sample.id);
-            return (
-              <div
-                key={sample.id}
-                className={`sample-text-card ${selectedTextId === sample.id ? 'selected' : ''}`}
-                onClick={() => handleSampleSelect(sample)}
-              >
-                <div className="sample-text-card-header">
-                  <div className="sample-text-card-title">{sample.title}</div>
-                  {level > 0 && (
-                    <div className={`mastery-stars level-${level}`}>
-                      {getMasteryStars(level)}
-                      {level === 5 && <span className="master-badge-inline">{'\u{1F3C5}'}</span>}
-                    </div>
-                  )}
-                </div>
-                <div className="sample-text-card-preview">
-                  {sample.text.substring(0, 80)}...
-                </div>
-                <div className="sample-text-card-meta">
-                  {sample.category} {'\u00B7'} {sample.wordCount} words
-                </div>
+        {selectedTextId && (() => {
+          const sample = SAMPLE_TEXTS.find(s => s.id === selectedTextId);
+          if (!sample) return null;
+          const level = getMasteryLevel(sample.id);
+          return (
+            <div className="sample-selected-info">
+              <div className="sample-selected-header">
+                <span className="sample-selected-title">{sample.title}</span>
+                {level > 0 && (
+                  <span className={`mastery-stars level-${level}`}>
+                    {getMasteryStars(level)}
+                    {level === 5 && <span className="master-badge-inline">{'\u{1F3C5}'}</span>}
+                  </span>
+                )}
               </div>
-            );
-          })}
-        </div>
+              <div className="sample-selected-meta">{sample.category} {'\u00B7'} {sample.wordCount} words</div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* Text Input */}
